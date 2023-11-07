@@ -2,16 +2,12 @@ import {dayReportToDayReportDTOConverter} from "src/dataAccessLogic/BusinessToDT
 import {CurrentProblemDAL} from "src/dataAccessLogic/CurrentProblemDAL";
 import {dayReportDTOToDayReportConverter} from
   "src/dataAccessLogic/DTOToBusinessConverter/dayReportDTOToDayReportConverter";
-import {getConvertedValue, getConvertedValues} from "src/dataAccessLogic/getConvertedValues";
 import {JobDoneDAL} from "src/dataAccessLogic/JobDoneDAL";
 import {MentorCommentDAL} from "src/dataAccessLogic/MentorCommentDAL";
 import {PlanForNextPeriodDAL} from "src/dataAccessLogic/PlanForNextPeriodDAL";
-import {CurrentProblem} from "src/model/businessModel/CurrentProblem";
 import {DayReport} from "src/model/businessModel/DayReport";
-import {JobDone} from "src/model/businessModel/JobDone";
-import {MentorComment} from "src/model/businessModel/MentorComment";
-import {PlanForNextPeriod} from "src/model/businessModel/PlanForNextPeriod";
 import {DayReportDTOWithoutUuid, DayReportService} from "src/service/DayReportService";
+import {WayService} from "src/service/WayService";
 import {DateUtils} from "src/utils/DateUtils";
 
 /**
@@ -20,38 +16,16 @@ import {DateUtils} from "src/utils/DateUtils";
 export class DayReportDAL {
 
   /**
-   * Get DayReports
+   * Get DayReports that belong to a specific way
    */
-  public static async getDayReports(): Promise<DayReport[]> {
-    const dayReportsDTO = await DayReportService.getDayReportsDTO();
-    const jobsDonePreview = await JobDoneDAL.getJobsDone();
-    const plansForNextPeriodPreview = await PlanForNextPeriodDAL.getPlansForNextPeriod();
-    const mentorCommentsPreview = await MentorCommentDAL.getMentorComments();
-    const problemsForCurrentPeriodPreview = await CurrentProblemDAL.getCurrentProblems();
+  public static async getDayReports(wayUuid: string): Promise<DayReport[]> {
+    const dayReportsUuids = (await WayService.getWayDTO(wayUuid)).dayReportUuids;
 
-    const jobDoneUuids = getConvertedValues<JobDone>(dayReportsDTO, "jobDoneUuids", jobsDonePreview);
-    const planForNextPeriodUuids =
-      getConvertedValues<PlanForNextPeriod>(dayReportsDTO, "planForNextPeriodUuids", plansForNextPeriodPreview);
-    const problemForCurrentPeriodUuids =
-      getConvertedValues<CurrentProblem>(dayReportsDTO, "problemForCurrentPeriodUuids", problemsForCurrentPeriodPreview);
-    const mentorCommentUuids = getConvertedValues<MentorComment>(dayReportsDTO, "mentorCommentUuids", mentorCommentsPreview);
+    const dayReports = await Promise.all(dayReportsUuids.map(async (dayReportUuid) => {
+      const dyReport = await DayReportDAL.getDayReport(dayReportUuid);
 
-    /**
-     * DayReportProps for each day report separately
-     */
-    const getDayReportProps = (i: number) => {
-      const obj = {
-        jobDoneUuids: jobDoneUuids[i],
-        planForNextPeriodUuids: planForNextPeriodUuids[i],
-        problemForCurrentPeriodUuids: problemForCurrentPeriodUuids[i],
-        mentorCommentUuids: mentorCommentUuids[i],
-      };
-
-      return obj;
-    };
-
-    const dayReports = dayReportsDTO
-      .map((dayReportPreview, i) => dayReportDTOToDayReportConverter(dayReportPreview, getDayReportProps(i)));
+      return dyReport;
+    }));
 
     return dayReports;
   }
@@ -61,23 +35,38 @@ export class DayReportDAL {
    */
   public static async getDayReport(uuid: string): Promise<DayReport> {
     const dayReportDTO = await DayReportService.getDayReportDTO(uuid);
-    const jobsDonePreview = await JobDoneDAL.getJobsDone();
-    const plansForNextPeriodPreview = await PlanForNextPeriodDAL.getPlansForNextPeriod();
-    const mentorCommentsPreview = await MentorCommentDAL.getMentorComments();
-    const problemsForCurrentPeriodPreview = await CurrentProblemDAL.getCurrentProblems();
+    const {jobDoneUuids, planForNextPeriodUuids, mentorCommentUuids, problemForCurrentPeriodUuids} = dayReportDTO;
 
-    const jobDoneUuids = getConvertedValue<JobDone>(dayReportDTO, "jobDoneUuids", jobsDonePreview);
-    const planForNextPeriodUuids =
-      getConvertedValue<PlanForNextPeriod>(dayReportDTO, "planForNextPeriodUuids", plansForNextPeriodPreview);
-    const problemForCurrentPeriodUuids =
-      getConvertedValue<CurrentProblem>(dayReportDTO, "problemForCurrentPeriodUuids", problemsForCurrentPeriodPreview);
-    const mentorCommentUuids = getConvertedValue<MentorComment>(dayReportDTO, "mentorCommentUuids", mentorCommentsPreview);
+    const jobsDone = await Promise.all(jobDoneUuids.map(async (jobDoneUuid) => {
+      const jobDone = await JobDoneDAL.getJobDone(jobDoneUuid);
+
+      return jobDone;
+    }));
+
+    const plansForNextPeriod = await Promise.all(planForNextPeriodUuids.map(async (planForNextPeriodUuid) => {
+      const jobDone = await PlanForNextPeriodDAL.getPlanForNextPeriod(planForNextPeriodUuid);
+
+      return jobDone;
+    }));
+
+    const mentorComments = await Promise.all(mentorCommentUuids.map(async (mentorCommentUuid) => {
+      const jobDone = await MentorCommentDAL.getMentorComment(mentorCommentUuid);
+
+      return jobDone;
+    }));
+
+    const problemsForCurrentPeriod =
+      await Promise.all(problemForCurrentPeriodUuids.map(async (problemForCurrentPeriodUuid) => {
+        const jobDone = await CurrentProblemDAL.getCurrentProblem(problemForCurrentPeriodUuid);
+
+        return jobDone;
+      }));
 
     const dayReportProps = {
-      jobDoneUuids,
-      planForNextPeriodUuids,
-      problemForCurrentPeriodUuids,
-      mentorCommentUuids,
+      jobsDone,
+      plansForNextPeriod,
+      problemsForCurrentPeriod,
+      mentorComments,
     };
 
     const dayReport = dayReportDTOToDayReportConverter(dayReportDTO, dayReportProps);
@@ -86,25 +75,26 @@ export class DayReportDAL {
   }
 
   /**
-   * Create new DayReport with empty fields and autogenerated uuid
+   * Create DayReport with empty fields and autogenerated uuid
    */
-  public static async createNewDayReport() {
-    const newJobDoneUuid = await JobDoneDAL.createNewJobDone();
-    const newPlanForNextPeriodUuid = await PlanForNextPeriodDAL.createNewPlanForNextPeriod();
-    const newCurrentProblemUuid = await CurrentProblemDAL.createNewCurrentProblem();
-    const newMentorCommentUuid = await MentorCommentDAL.createNewMentorComment();
-
+  public static async createDayReport(wayUuid: string) {
     const DEFAULT_DAY_REPORT: DayReportDTOWithoutUuid = {
       date: DateUtils.getShortISODateValue(new Date),
-      jobDoneUuids: [`${newJobDoneUuid}`],
-      planForNextPeriodUuids: [`${newPlanForNextPeriodUuid}`],
-      problemForCurrentPeriodUuids: [`${newCurrentProblemUuid}`],
-      studentComments: [""],
-      learnedForToday: [""],
-      mentorCommentUuids: [`${newMentorCommentUuid}`],
+      jobDoneUuids: [],
+      planForNextPeriodUuids: [],
+      problemForCurrentPeriodUuids: [],
+      studentComments: [],
+      learnedForToday: [],
+      mentorCommentUuids: [],
       isDayOff: false,
     };
-    await DayReportService.createDayReportDTO(DEFAULT_DAY_REPORT);
+    const dayReport = await DayReportService.createDayReportDTO(DEFAULT_DAY_REPORT);
+
+    const way = await WayService.getWayDTO(wayUuid);
+
+    const updatedDayReportUuids = [...way.dayReportUuids, dayReport.uuid];
+
+    await WayService.updateWayDTO(way, updatedDayReportUuids);
   }
 
   /**

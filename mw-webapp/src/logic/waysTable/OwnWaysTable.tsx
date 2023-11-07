@@ -1,16 +1,16 @@
 import {useEffect, useState} from "react";
 import {WayPreviewDAL} from "src/dataAccessLogic/WayPreviewDAL";
-import {columns, OWNER_EMAIL, OWNER_NAME} from "src/logic/waysTable/columns";
+import {columns, WAYS_OWNER} from "src/logic/waysTable/columns";
 import {WaysTable} from "src/logic/waysTable/WaysTable";
 import {WayPreview} from "src/model/businessModelPreview/WayPreview";
 
 /**
- * Own ways table props
+ * Props with User uuid
  */
-interface OwnWaysTableProps {
+export interface PropsWithUuid {
 
   /**
-   * User Uuid
+   * User uuid
    */
   uuid: string;
 }
@@ -18,14 +18,14 @@ interface OwnWaysTableProps {
 /**
  * Render table of own ways preview
  */
-export const OwnWaysTable = (props: OwnWaysTableProps) => {
+export const OwnWaysTable = (props: PropsWithUuid) => {
   const [ownWays, setOwnWays] = useState<WayPreview[]>([]);
 
   /**
    * Load User own ways
    */
   const loadOwnWays = async () => {
-    const data = await WayPreviewDAL.getUserWaysPreview(props.uuid, "OwnWays");
+    const data = await WayPreviewDAL.getUserWaysPreview(props.uuid, "Own");
     setOwnWays(data);
   };
 
@@ -33,7 +33,7 @@ export const OwnWaysTable = (props: OwnWaysTableProps) => {
     loadOwnWays();
   }, []);
 
-  const columnsToExclude = [OWNER_NAME, OWNER_EMAIL];
+  const columnsToExclude = [WAYS_OWNER];
 
   const ownWaysTableColumns = columns.filter(column => {
     if (column.header) {

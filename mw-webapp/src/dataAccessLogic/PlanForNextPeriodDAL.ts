@@ -5,21 +5,12 @@ import {planForNextPeriodDTOToPlanForNextPeriodConverter} from
 import {PlanForNextPeriod} from "src/model/businessModel/PlanForNextPeriod";
 import {TimeUnit} from "src/model/businessModel/time/timeUnit/TimeUnit";
 import {PlanForNextPeriodDTOWithoutUuid, PlanForNextPeriodService} from "src/service/PlanForNextPeriodService";
+import {SPACE} from "src/utils/unicodeSymbols";
 
 /**
  * Provides methods to interact with the PlanForNextPeriod business model
  */
 export class PlanForNextPeriodDAL {
-
-  /**
-   * Get PLansForNextPeriod
-   */
-  public static async getPlansForNextPeriod(): Promise<PlanForNextPeriod[]> {
-    const plansForNextPeriodDTO = await PlanForNextPeriodService.getPlansForNextPeriodDTO();
-    const plansForNextPeriod = plansForNextPeriodDTO.map(planForNextPeriodDTOToPlanForNextPeriodConverter);
-
-    return plansForNextPeriod;
-  }
 
   /**
    * Get PlanForNextPeriod by uuid
@@ -32,19 +23,20 @@ export class PlanForNextPeriodDAL {
   }
 
   /**
-   * Create new PlanForNextPeriod
-   * @return {string} Uuid of new PlanForNextPeriod
+   * Create PlanForNextPeriod
    */
-  public static async createNewPlanForNextPeriod(): Promise<string> {
+  public static async createPlanForNextPeriod(): Promise<PlanForNextPeriod> {
     const planForNextPeriodWithoutUuid: PlanForNextPeriodDTOWithoutUuid = {
-      job: "",
+      job: SPACE,
       estimationTime: 0,
       timeUnit: TimeUnit.minute,
     };
 
-    const newPlanForNextPeriodUuid = await PlanForNextPeriodService.createPlanForNextPeriodDTO(planForNextPeriodWithoutUuid);
+    const newPlanForNextPeriod = await PlanForNextPeriodService.createPlanForNextPeriodDTO(planForNextPeriodWithoutUuid);
 
-    return newPlanForNextPeriodUuid;
+    const planForNextPeriod = planForNextPeriodDTOToPlanForNextPeriodConverter(newPlanForNextPeriod);
+
+    return planForNextPeriod;
   }
 
   /**

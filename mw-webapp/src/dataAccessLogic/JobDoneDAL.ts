@@ -3,21 +3,12 @@ import {jobDoneDTOToJobDoneConverter} from "src/dataAccessLogic/DTOToBusinessCon
 import {JobDone} from "src/model/businessModel/JobDone";
 import {TimeUnit} from "src/model/businessModel/time/timeUnit/TimeUnit";
 import {JobDoneDTOWithoutUuid, JobDoneService} from "src/service/JobDoneService";
+import {SPACE} from "src/utils/unicodeSymbols";
 
 /**
  * Provides methods to interact with the JobDone business model
  */
 export class JobDoneDAL {
-
-  /**
-   * Get JobsDone
-   */
-  public static async getJobsDone(): Promise<JobDone[]> {
-    const jobsDoneDTO = await JobDoneService.getJobsDoneDTO();
-    const jobsDone = jobsDoneDTO.map(jobDoneDTOToJobDoneConverter);
-
-    return jobsDone;
-  }
 
   /**
    * Get JobDone by uuid
@@ -30,19 +21,20 @@ export class JobDoneDAL {
   }
 
   /**
-   * Create new JobDone
-   * @return {string} Uuid of new JobDone
+   * Create JobDone
    */
-  public static async createNewJobDone(): Promise<string> {
+  public static async createJobDone(): Promise<JobDone> {
     const jobDoneWithoutUuid: JobDoneDTOWithoutUuid = {
-      description: "",
+      description: SPACE,
       time: 0,
       timeUnit: TimeUnit.minute,
     };
 
-    const newJobDoneUuid = await JobDoneService.createJobDoneDTO(jobDoneWithoutUuid);
+    const newJobDone = await JobDoneService.createJobDoneDTO(jobDoneWithoutUuid);
 
-    return newJobDoneUuid;
+    const jobDone = jobDoneDTOToJobDoneConverter(newJobDone);
+
+    return jobDone;
   }
 
   /**

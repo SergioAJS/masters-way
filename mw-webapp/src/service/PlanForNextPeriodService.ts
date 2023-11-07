@@ -1,8 +1,7 @@
-import {collection, doc, getDoc, getDocs, setDoc, updateDoc} from "firebase/firestore";
+import {collection, doc, getDoc, setDoc, updateDoc} from "firebase/firestore";
 import {db} from "src/firebase";
 import {PlanForNextPeriodDTO} from "src/model/DTOModel/PlanForNextPeriodDTO";
 import {documentSnapshotToDTOConverter} from "src/service/converter/documentSnapshotToDTOConverter";
-import {querySnapshotToDTOConverter} from "src/service/converter/querySnapshotToDTOConverter";
 
 const PATH_TO_PLANS_FOR_NEXT_PERIOD_COLLECTION = "plansForNextPeriod";
 
@@ -17,16 +16,6 @@ export type PlanForNextPeriodDTOWithoutUuid = Omit<PlanForNextPeriodDTO, "uuid">
 export class PlanForNextPeriodService {
 
   /**
-   * Get PlansForNextPeriodDTO
-   */
-  public static async getPlansForNextPeriodDTO(): Promise<PlanForNextPeriodDTO[]> {
-    const plansForNextPeriodRaw = await getDocs(collection(db, PATH_TO_PLANS_FOR_NEXT_PERIOD_COLLECTION));
-    const plansForNextPeriod: PlanForNextPeriodDTO[] = querySnapshotToDTOConverter<PlanForNextPeriodDTO>(plansForNextPeriodRaw);
-
-    return plansForNextPeriod;
-  }
-
-  /**
    * Get PlanForNextPeriodDTO by Uuid
    */
   public static async getPlanForNextPeriodDTO(uuid: string): Promise<PlanForNextPeriodDTO> {
@@ -38,25 +27,25 @@ export class PlanForNextPeriodService {
 
   /**
    * Create PlanForNextPeriodDTO
-   * @return {string} Uuid of PlanForNextPeriodDTO
    */
-  public static async createPlanForNextPeriodDTO(data: PlanForNextPeriodDTOWithoutUuid): Promise<string> {
+  public static async createPlanForNextPeriodDTO
+  (planForNextPeriodDTOWithoutUuid: PlanForNextPeriodDTOWithoutUuid): Promise<PlanForNextPeriodDTO> {
     const docRef = doc(collection(db, PATH_TO_PLANS_FOR_NEXT_PERIOD_COLLECTION));
     const DEFAULT_PLAN_FOR_NEXT_PERIOD: PlanForNextPeriodDTO = {
-      ...data,
+      ...planForNextPeriodDTOWithoutUuid,
       uuid: docRef.id,
     };
 
     await setDoc(docRef, DEFAULT_PLAN_FOR_NEXT_PERIOD);
 
-    return docRef.id;
+    return DEFAULT_PLAN_FOR_NEXT_PERIOD;
   }
 
   /**
    * Update PlanForNextPeriodDTO
    */
-  public static async updatePLanForNextPeriodDTO(data: PlanForNextPeriodDTO, uuid: string) {
-    await updateDoc(doc(db, PATH_TO_PLANS_FOR_NEXT_PERIOD_COLLECTION, uuid), {...data});
+  public static async updatePLanForNextPeriodDTO(planForNextPeriodDTO: PlanForNextPeriodDTO, uuid: string) {
+    await updateDoc(doc(db, PATH_TO_PLANS_FOR_NEXT_PERIOD_COLLECTION, uuid), {...planForNextPeriodDTO});
   }
 
 }

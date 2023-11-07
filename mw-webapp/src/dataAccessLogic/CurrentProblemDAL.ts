@@ -4,6 +4,7 @@ import {currentProblemDTOToCurrentProblemConverter} from
   "src/dataAccessLogic/DTOToBusinessConverter/currentProblemDTOToCurrentProblemConverter";
 import {CurrentProblem} from "src/model/businessModel/CurrentProblem";
 import {CurrentProblemDTOWithoutUuid, CurrentProblemService} from "src/service/CurrentProblemService";
+import {SPACE} from "src/utils/unicodeSymbols";
 
 /**
  * Provides methods to interact with the CurrentProblem business model
@@ -11,38 +12,29 @@ import {CurrentProblemDTOWithoutUuid, CurrentProblemService} from "src/service/C
 export class CurrentProblemDAL {
 
   /**
-   *Get CurrentProblems
-   */
-  public static async getCurrentProblems (): Promise<CurrentProblem[]> {
-    const currentProblemsDTO = await CurrentProblemService.getCurrentProblemsDTO();
-    const currentProblems = currentProblemsDTO.map(currentProblemDTOToCurrentProblemConverter);
-
-    return currentProblems;
-  }
-
-  /**
    * Get CurrentProblem by uuid
    */
-  public static async getCurrentProblem (uuid: string): Promise<CurrentProblem> {
-    const CurrentProblemDTO = await CurrentProblemService.getCurrentProblemDTO(uuid);
-    const currentProblem = currentProblemDTOToCurrentProblemConverter(CurrentProblemDTO);
+  public static async getCurrentProblem(uuid: string): Promise<CurrentProblem> {
+    const currentProblemDTO = await CurrentProblemService.getCurrentProblemDTO(uuid);
+    const currentProblem = currentProblemDTOToCurrentProblemConverter(currentProblemDTO);
 
     return currentProblem;
   }
 
   /**
-   * Create new CurrentProblem
-   * @return {string} Uuid of new CurrentProblem
+   * Create CurrentProblem
    */
-  public static async createNewCurrentProblem(): Promise<string> {
+  public static async createCurrentProblem(): Promise<CurrentProblem> {
     const currentProblemWithoutUuid: CurrentProblemDTOWithoutUuid = {
-      description: "",
+      description: SPACE,
       isDone: false,
     };
 
-    const newCurrentProblemUuid = await CurrentProblemService.createCurrentProblemDTO(currentProblemWithoutUuid);
+    const newCurrentProblem = await CurrentProblemService.createCurrentProblemDTO(currentProblemWithoutUuid);
 
-    return newCurrentProblemUuid;
+    const currentProblem = currentProblemDTOToCurrentProblemConverter(newCurrentProblem);
+
+    return currentProblem;
   }
 
   /**
